@@ -1,0 +1,2032 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tools</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --primary: #0078d4;
+    --primary-hover: #106ebe;
+    --primary-dark: #005a9e;
+    --bg: #f3f2f1;
+    --sidebar-bg: #faf9f8;
+    --panel-bg: #ffffff;
+    --border: #e1dfdd;
+    --border-light: #edebe9;
+    --text-primary: #252423;
+    --text-secondary: #605e5c;
+    --text-muted: #a19f9d;
+    --online: #92c353;
+    --away: #f8d22a;
+    --offline: #a19f9d;
+    --danger: #d13438;
+    --success: #107c10;
+    --msg-self: #e3f2fd;
+    --msg-other: #ffffff;
+    --shadow: 0 1.6px 3.6px rgba(0,0,0,.132), 0 .3px .9px rgba(0,0,0,.108);
+    --shadow-md: 0 3.2px 7.2px rgba(0,0,0,.132), 0 .6px 1.8px rgba(0,0,0,.108);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── LOGIN SCREEN ─── */
+  #login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: var(--bg);
+  }
+
+  .login-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    padding: 40px 48px;
+    width: 400px;
+    border-radius: 2px;
+  }
+
+  .login-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .login-logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--primary);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+  }
+
+  .login-logo-text {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .login-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .login-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+
+  .form-field {
+    margin-bottom: 16px;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--text-primary);
+  }
+
+  .form-label span.req { color: var(--danger); }
+
+  .form-input, .form-select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    background: white;
+    transition: border-color .15s;
+  }
+
+  .form-input:focus, .form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all .1s;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+  .btn-primary:active { background: var(--primary-dark); }
+
+  .btn-secondary {
+    background: white;
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+
+  .btn-secondary:hover { background: var(--bg); }
+
+  .btn-danger {
+    background: var(--danger);
+    color: white;
+    border-color: var(--danger);
+  }
+
+  .btn-full { width: 100%; }
+
+  .login-error {
+    background: #fde7e9;
+    border: 1px solid #f4b8bc;
+    color: var(--danger);
+    padding: 8px 12px;
+    border-radius: 2px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .login-error.show { display: block; }
+
+  .change-pwd-note {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    padding: 8px;
+    background: #fff4ce;
+    border: 1px solid #f8d22a;
+    border-radius: 2px;
+  }
+
+  /* ─── FAKE GOOGLE ─── */
+  #fake-google {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: white;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #fake-google.show { display: flex; }
+
+  .google-logo {
+    font-size: 72px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    margin-bottom: 24px;
+  }
+
+  .google-logo span:nth-child(1) { color: #4285f4; }
+  .google-logo span:nth-child(2) { color: #ea4335; }
+  .google-logo span:nth-child(3) { color: #fbbc05; }
+  .google-logo span:nth-child(4) { color: #4285f4; }
+  .google-logo span:nth-child(5) { color: #34a853; }
+  .google-logo span:nth-child(6) { color: #ea4335; }
+
+  .google-search {
+    display: flex;
+    align-items: center;
+    border: 1px solid #dfe1e5;
+    border-radius: 24px;
+    padding: 10px 20px;
+    width: 560px;
+    gap: 12px;
+    box-shadow: 0 1px 6px rgba(32,33,36,.28);
+  }
+
+  .google-search input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    font-family: arial, sans-serif;
+  }
+
+  .google-search-icon { color: #9aa0a6; font-size: 20px; }
+
+  .google-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .google-btn {
+    background: #f8f9fa;
+    border: 1px solid #f8f9fa;
+    color: #3c4043;
+    padding: 9px 23px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: arial, sans-serif;
+    cursor: default;
+  }
+
+  .google-btn:hover { border-color: #dadce0; box-shadow: 0 1px 1px rgba(0,0,0,.1); }
+
+  /* ─── MAIN APP ─── */
+  #app {
+    display: none;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  #app.show { display: flex; }
+
+  /* TITLEBAR */
+  .titlebar {
+    background: var(--primary);
+    color: white;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,.2);
+  }
+
+  .titlebar-logo {
+    width: 24px;
+    height: 24px;
+    background: rgba(255,255,255,.2);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .titlebar-title { font-size: 15px; font-weight: 600; flex: 1; }
+
+  .titlebar-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .titlebar-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .titlebar-btn {
+    background: rgba(255,255,255,.1);
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 2px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .1s;
+  }
+
+  .titlebar-btn:hover { background: rgba(255,255,255,.2); }
+
+  /* MAIN LAYOUT */
+  .main-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 260px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--sidebar-bg);
+  }
+
+  .sidebar-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: none;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .1s;
+    font-weight: 500;
+  }
+
+  .sidebar-tab:hover { color: var(--text-primary); background: var(--border-light); }
+  .sidebar-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .sidebar-search {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .sidebar-search input {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    background: white;
+  }
+
+  .sidebar-search input:focus { border-color: var(--primary); }
+
+  .sidebar-section {
+    padding: 8px 0;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .sidebar-section-label {
+    padding: 4px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: .5px;
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: background .1s;
+    position: relative;
+  }
+
+  .contact-item:hover { background: var(--border-light); }
+  .contact-item.active { background: #deecf9; }
+
+  .contact-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 2px solid var(--sidebar-bg);
+    position: absolute;
+    bottom: 0;
+    right: 0;
+  }
+
+  .status-online { background: var(--online); }
+  .status-away { background: var(--away); }
+  .status-offline { background: var(--offline); }
+
+  .contact-info { flex: 1; min-width: 0; }
+
+  .contact-name {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .contact-preview {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .contact-badge {
+    background: var(--primary);
+    color: white;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    min-width: 18px;
+    text-align: center;
+  }
+
+  .sidebar-new-group {
+    padding: 8px 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* CHAT AREA */
+  .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel-bg);
+    overflow: hidden;
+  }
+
+  .chat-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    gap: 12px;
+  }
+
+  .chat-empty-icon { font-size: 48px; opacity: .4; }
+  .chat-empty-text { font-size: 15px; }
+
+  .chat-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    background: var(--panel-bg);
+    box-shadow: var(--shadow);
+  }
+
+  .chat-header-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .chat-header-info { flex: 1; }
+  .chat-header-name { font-size: 15px; font-weight: 600; }
+  .chat-header-status { font-size: 12px; color: var(--text-secondary); }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .msg-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 8px;
+  }
+
+  .msg-group.self { align-items: flex-end; }
+  .msg-group.other { align-items: flex-start; }
+
+  .msg-sender {
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 0 10px;
+    font-weight: 500;
+  }
+
+  .msg-bubble {
+    max-width: 65%;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.5;
+    position: relative;
+    word-break: break-word;
+  }
+
+  .msg-group.self .msg-bubble {
+    background: var(--msg-self);
+    border: 1px solid #bbdefb;
+  }
+
+  .msg-group.other .msg-bubble {
+    background: var(--msg-other);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+
+  .msg-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 0 10px;
+  }
+
+  .msg-date-separator {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .msg-date-separator::before, .msg-date-separator::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--border);
+  }
+
+  /* CHAT INPUT */
+  .chat-input-area {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--panel-bg);
+    flex-shrink: 0;
+  }
+
+  .chat-input-box {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    transition: border-color .15s;
+  }
+
+  .chat-input-box:focus-within { border-color: var(--primary); }
+
+  .chat-input-toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg);
+  }
+
+  .toolbar-btn {
+    background: none;
+    border: none;
+    padding: 3px 6px;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: background .1s;
+  }
+
+  .toolbar-btn:hover { background: var(--border); color: var(--text-primary); }
+
+  .chat-input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .chat-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    max-height: 120px;
+    min-height: 24px;
+    line-height: 1.5;
+    background: transparent;
+  }
+
+  .send-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 2px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background .1s;
+    flex-shrink: 0;
+  }
+
+  .send-btn:hover { background: var(--primary-hover); }
+  .send-btn:disabled { background: var(--text-muted); cursor: default; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: white;
+    border-radius: 2px;
+    box-shadow: var(--shadow-md);
+    width: 440px;
+    max-width: 95vw;
+    overflow: hidden;
+  }
+
+  .modal-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-title { font-size: 16px; font-weight: 600; }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+
+  .modal-close:hover { background: var(--bg); }
+
+  .modal-body { padding: 20px; }
+
+  .modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* EMOJI PICKER */
+  .emoji-picker {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: var(--shadow-md);
+    padding: 8px;
+    width: 280px;
+    z-index: 100;
+  }
+
+  .emoji-picker.show { display: block; }
+
+  .emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+  }
+
+  .emoji-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    padding: 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background .1s;
+    text-align: center;
+  }
+
+  .emoji-btn:hover { background: var(--bg); }
+
+  .input-wrapper { position: relative; flex: 1; }
+
+  /* STATUS BAR */
+  .status-bar {
+    height: 24px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .status-dot-sm {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--online);
+  }
+
+  .status-dot-sm.error { background: var(--danger); }
+  .status-dot-sm.warn { background: var(--away); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* TYPING INDICATOR */
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .typing-dots { display: flex; gap: 3px; }
+  .typing-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    animation: typingBounce 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: .2s; }
+  .typing-dot:nth-child(3) { animation-delay: .4s; }
+
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-4px); }
+  }
+
+  /* AVATAR COLORS */
+  .av-blue { background: #0078d4; }
+  .av-teal { background: #038387; }
+  .av-green { background: #107c10; }
+  .av-orange { background: #ca5010; }
+  .av-red { background: #d13438; }
+  .av-purple { background: #5c2e91; }
+  .av-pink { background: #bf0077; }
+  .av-darkblue { background: #003966; }
+
+  .group-icon {
+    background: #5c2e91;
+    color: white;
+    border-radius: 4px !important;
+    font-size: 16px;
+  }
+
+  /* LINK STYLE IN MESSAGES */
+  .msg-bubble a { color: var(--primary); text-decoration: underline; }
+
+  /* NEW GROUP MEMBER LIST */
+  .member-list { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 2px; }
+  .member-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; }
+  .member-item:hover { background: var(--bg); }
+  .member-item input[type=checkbox] { cursor: pointer; }
+
+  /* NOTIFICATION FLASH */
+  @keyframes titleFlash {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- FAKE GOOGLE -->
+<div id="fake-google">
+  <div class="google-logo">
+    <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+  </div>
+  <div class="google-search">
+    <span class="google-search-icon">🔍</span>
+    <input type="text" id="google-input" placeholder="">
+  </div>
+  <div class="google-buttons">
+    <div class="google-btn">Cerca con Google</div>
+    <div class="google-btn">Mi sento fortunato</div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">💬</div>
+      <div class="login-logo-text">Tools Chat</div>
+    </div>
+    <div id="login-form-container">
+      <div class="login-title">Accedi</div>
+      <div class="login-subtitle">Inserisci le tue credenziali per continuare</div>
+      <div class="login-error" id="login-error"></div>
+      <div class="form-field">
+        <label class="form-label">Utente <span class="req">*</span></label>
+        <select class="form-select" id="login-user-select">
+          <option value="">— Seleziona utente —</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Password <span class="req">*</span></label>
+        <input type="password" class="form-input" id="login-password" placeholder="Password">
+      </div>
+      <button class="btn btn-primary btn-full" id="login-btn" style="margin-top:8px">Accedi</button>
+    </div>
+    <div id="change-pwd-container" style="display:none">
+      <div class="login-title">Cambia password</div>
+      <div class="change-pwd-note">⚠️ Primo accesso: devi impostare una nuova password personale.</div>
+      <div class="login-error" id="change-pwd-error" style="margin-top:12px"></div>
+      <div class="form-field" style="margin-top:16px">
+        <label class="form-label">Nuova password <span class="req">*</span></label>
+        <input type="password" class="form-input" id="new-password" placeholder="Minimo 6 caratteri">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Conferma password <span class="req">*</span></label>
+        <input type="password" class="form-input" id="confirm-password" placeholder="Ripeti la password">
+      </div>
+      <button class="btn btn-primary btn-full" id="change-pwd-btn" style="margin-top:8px">Imposta password</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="titlebar">
+    <div class="titlebar-logo">💬</div>
+    <div class="titlebar-title">Tools Chat</div>
+    <div class="titlebar-user">
+      <div class="titlebar-avatar" id="tb-avatar"></div>
+      <span id="tb-username"></span>
+    </div>
+    <button class="titlebar-btn" id="btn-change-status">● Online</button>
+    <button class="titlebar-btn" id="btn-logout">Esci</button>
+  </div>
+
+  <div class="main-layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="direct">Diretti</button>
+        <button class="sidebar-tab" data-tab="groups">Gruppi</button>
+      </div>
+      <div class="sidebar-search">
+        <input type="text" id="sidebar-search" placeholder="Cerca...">
+      </div>
+      <div class="sidebar-section" id="contacts-list"></div>
+      <div class="sidebar-new-group" id="new-group-area" style="display:none">
+        <button class="btn btn-secondary btn-full" id="btn-new-group">+ Nuovo gruppo</button>
+      </div>
+    </div>
+
+    <!-- CHAT AREA -->
+    <div class="chat-area">
+      <div class="chat-empty" id="chat-empty">
+        <div class="chat-empty-icon">💬</div>
+        <div class="chat-empty-text">Seleziona una conversazione</div>
+      </div>
+      <div id="chat-main" style="display:none; flex-direction:column; flex:1; overflow:hidden; display:none">
+        <div class="chat-header">
+          <div class="chat-header-avatar" id="chat-header-avatar"></div>
+          <div class="chat-header-info">
+            <div class="chat-header-name" id="chat-header-name"></div>
+            <div class="chat-header-status" id="chat-header-status"></div>
+          </div>
+          <button class="btn btn-danger btn-sm" id="btn-clear-chat" style="font-size:12px;padding:4px 10px">🗑 Pulisci chat</button>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="typing-indicator" id="typing-indicator" style="display:none">
+          <div class="typing-dots">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+          <span id="typing-text"></span>
+        </div>
+        <div class="chat-input-area">
+          <div class="chat-input-box">
+            <div class="chat-input-toolbar">
+              <button class="toolbar-btn" id="btn-emoji" title="Emoji">😊</button>
+              <button class="toolbar-btn" title="Grassetto" onclick="wrapText('**','**')"><b>B</b></button>
+              <button class="toolbar-btn" title="Corsivo" onclick="wrapText('_','_')"><i>I</i></button>
+            </div>
+            <div class="chat-input-row">
+              <div class="input-wrapper">
+                <div class="emoji-picker" id="emoji-picker">
+                  <div class="emoji-grid" id="emoji-grid"></div>
+                </div>
+                <textarea class="chat-input" id="chat-input" rows="1" placeholder="Scrivi un messaggio..."></textarea>
+              </div>
+              <button class="send-btn" id="send-btn">Invia ↵</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-indicator">
+      <div class="status-dot-sm" id="firebase-status-dot"></div>
+      <span id="firebase-status-text">Firebase</span>
+    </div>
+    <div class="status-indicator">
+      <div class="status-dot-sm" id="supabase-status-dot"></div>
+      <span id="supabase-status-text">Supabase</span>
+    </div>
+    <span style="flex:1"></span>
+    <span id="active-service-text"></span>
+  </div>
+</div>
+
+<!-- MODAL NUOVO GRUPPO -->
+<div class="modal-overlay" id="modal-new-group">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nuovo gruppo</div>
+      <button class="modal-close" onclick="closeModal('modal-new-group')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label">Nome gruppo <span class="req">*</span></label>
+        <input type="text" class="form-input" id="group-name-input" placeholder="es. Team Vendite">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Partecipanti</label>
+        <div class="member-list" id="group-members-list"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-new-group')">Annulla</button>
+      <button class="btn btn-primary" id="btn-create-group">Crea gruppo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAMBIA STATUS -->
+<div class="modal-overlay" id="modal-status">
+  <div class="modal" style="width:280px">
+    <div class="modal-header">
+      <div class="modal-title">Cambia stato</div>
+      <button class="modal-close" onclick="closeModal('modal-status')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:12px">
+      <button class="btn btn-secondary btn-full" style="margin-bottom:6px;text-align:left;justify-content:flex-start" onclick="setStatus('online')">🟢 Online</button>
+      <button class="btn btn-secondary btn-full" style="margin-bottom:6px;text-align:left;justify-content:flex-start" onclick="setStatus('away')">🟡 Assente</button>
+      <button class="btn btn-secondary btn-full" style="text-align:left;justify-content:flex-start" onclick="setStatus('offline')">⚫ Non disponibile</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase + Supabase SDKs -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, onSnapshot, query, orderBy, where, serverTimestamp, deleteDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA05k5rK3d7PRzYQuJts4GWPZ87Io2Rkn4",
+  authDomain: "tools-7a350.firebaseapp.com",
+  projectId: "tools-7a350",
+  storageBucket: "tools-7a350.firebasestorage.app",
+  messagingSenderId: "176859022672",
+  appId: "1:176859022672:web:e459602ef3db9c73929855"
+};
+
+const SUPABASE_URL = "https://wepnxspgqlaqkhvgynor.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ESkW-KCPwfzmQVWj2eseFA_kR5UBr3G";
+
+const MAX_FREE_GROUPS = 5;
+const BOSS_KEY = 'KeyH'; // Alt+H
+const POLL_INTERVAL = 3000;
+const TYPING_TIMEOUT = 3000;
+
+const AVATAR_COLORS = ['av-blue','av-teal','av-green','av-orange','av-red','av-purple','av-pink','av-darkblue'];
+const EMOJIS = ['😀','😂','😍','🤔','👍','👎','❤️','🔥','✅','❌','⚠️','🎉','😊','🙏','💪','😅','🤣','😎','🥳','😴','🤦','🙄','😤','👋','🤝','💡','📌','📎','🔔','⏰','📅','💻','📧','📞','🏠','🚀','💰','📊','✏️','🗑️'];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let db, auth, app;
+let useFirebase = true;
+let firebaseOk = false;
+let supabaseOk = false;
+
+let currentUser = null; // { uid, username, email, role, avatarColor }
+let currentConv = null; // { id, type, name, participants }
+let users = {}; // uid -> user obj
+let conversations = {}; // id -> conv obj
+let messagesUnsubscribe = null;
+let usersUnsubscribe = null;
+let convUnsubscribe = null;
+let activeTab = 'direct';
+let bossMode = false;
+let titleFlashInterval = null;
+let unreadCounts = {};
+let typingTimeout = null;
+let lastSeenMessages = {};
+let searchQuery = '';
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+async function init() {
+  setupEmojiPicker();
+  setupBossKey();
+  setupLoginUI();
+
+  // Test Firebase
+  try {
+    app = initializeApp(FIREBASE_CONFIG);
+    db = getFirestore(app);
+    auth = getAuth(app);
+    // Quick connectivity test
+    await getDocs(query(collection(db, 'users')));
+    firebaseOk = true;
+    useFirebase = true;
+    updateStatusBar();
+  } catch(e) {
+    console.warn('Firebase non disponibile, provo Supabase', e);
+    firebaseOk = false;
+    useFirebase = false;
+  }
+
+  // Test Supabase
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/users?select=id&limit=1`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    supabaseOk = r.ok || r.status === 406; // 406 = table not found yet = server ok
+    if (!firebaseOk && supabaseOk) { useFirebase = false; await initSupabaseTables(); }
+  } catch(e) {
+    supabaseOk = false;
+  }
+
+  updateStatusBar();
+  await loadUsersForLogin();
+}
+
+// ═══════════════════════════════════════════════
+// STATUS BAR
+// ═══════════════════════════════════════════════
+function updateStatusBar() {
+  document.getElementById('firebase-status-dot').className = 'status-dot-sm ' + (firebaseOk ? '' : 'error');
+  document.getElementById('firebase-status-text').textContent = 'Firebase ' + (firebaseOk ? '✓' : '✗');
+  document.getElementById('supabase-status-dot').className = 'status-dot-sm ' + (supabaseOk ? '' : (firebaseOk ? 'warn' : 'error'));
+  document.getElementById('supabase-status-text').textContent = 'Supabase ' + (supabaseOk ? '✓' : '✗');
+  document.getElementById('active-service-text').textContent = 'Servizio attivo: ' + (useFirebase ? 'Firebase' : 'Supabase');
+}
+
+// ═══════════════════════════════════════════════
+// SUPABASE TABLES INIT
+// ═══════════════════════════════════════════════
+async function initSupabaseTables() {
+  // Create tables via SQL if not exist - using Supabase REST SQL endpoint
+  // Note: this needs to be done via dashboard first time; here we just check
+  console.log('Supabase mode - tables should be pre-created via dashboard');
+}
+
+// ═══════════════════════════════════════════════
+// FIREBASE HELPERS
+// ═══════════════════════════════════════════════
+async function fbGet(path, id) {
+  const snap = await getDoc(doc(db, path, id));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+async function fbSet(path, id, data) {
+  await setDoc(doc(db, path, id), data, { merge: true });
+}
+
+async function fbAdd(path, data) {
+  const ref = await addDoc(collection(db, path), data);
+  return ref.id;
+}
+
+async function fbGetAll(path) {
+  const snap = await getDocs(collection(db, path));
+  const res = {};
+  snap.forEach(d => res[d.id] = { id: d.id, ...d.data() });
+  return res;
+}
+
+async function fbDelete(path, id) {
+  await deleteDoc(doc(db, path, id));
+}
+
+// ═══════════════════════════════════════════════
+// SUPABASE HELPERS
+// ═══════════════════════════════════════════════
+async function sbReq(method, table, body, params='') {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : 'return=representation'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!r.ok && r.status !== 404) {
+    const txt = await r.text();
+    throw new Error(`Supabase ${method} ${table}: ${r.status} ${txt}`);
+  }
+  return r.status === 404 ? null : await r.json();
+}
+
+async function sbGet(table, id) {
+  const res = await sbReq('GET', table, null, `?id=eq.${id}`);
+  return res && res.length > 0 ? res[0] : null;
+}
+
+async function sbGetAll(table) {
+  const res = await sbReq('GET', table, null, '?order=created_at.asc');
+  const obj = {};
+  if (res) res.forEach(r => obj[r.id] = r);
+  return obj;
+}
+
+async function sbSet(table, id, data) {
+  const existing = await sbGet(table, id);
+  if (existing) {
+    await sbReq('PATCH', table, data, `?id=eq.${id}`);
+  } else {
+    await sbReq('POST', table, { id, ...data });
+  }
+}
+
+async function sbAdd(table, data) {
+  const res = await sbReq('POST', table, data);
+  return res && res.length > 0 ? res[0].id : null;
+}
+
+// ═══════════════════════════════════════════════
+// UNIFIED DB OPERATIONS
+// ═══════════════════════════════════════════════
+async function dbGet(col, id) { return useFirebase ? fbGet(col, id) : sbGet(col, id); }
+async function dbSet(col, id, data) { return useFirebase ? fbSet(col, id, data) : sbSet(col, id, data); }
+async function dbAdd(col, data) { return useFirebase ? fbAdd(col, data) : sbAdd(col, data); }
+async function dbGetAll(col) { return useFirebase ? fbGetAll(col) : sbGetAll(col); }
+
+// ═══════════════════════════════════════════════
+// USERS MANAGEMENT
+// ═══════════════════════════════════════════════
+async function loadUsersForLogin() {
+  const sel = document.getElementById('login-user-select');
+  try {
+    if (useFirebase) {
+      users = await fbGetAll('users');
+    } else {
+      users = await sbGetAll('users');
+    }
+    sel.innerHTML = '<option value="">— Seleziona utente —</option>';
+    Object.values(users).filter(u => u.active !== false).forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.id;
+      opt.textContent = u.username;
+      sel.appendChild(opt);
+    });
+    // If no users, create master
+    if (Object.keys(users).length === 0) {
+      await createMasterUser();
+      await loadUsersForLogin();
+    }
+  } catch(e) {
+    // First run - create master
+    await createMasterUser();
+    await loadUsersForLogin();
+  }
+}
+
+async function createMasterUser() {
+  const masterId = 'master_' + Date.now();
+  const masterData = {
+    username: 'Admin',
+    email: 'admin@tools.local',
+    role: 'master',
+    passwordHash: simpleHash('admin123'),
+    mustChangePwd: true,
+    avatarColor: 'av-blue',
+    status: 'online',
+    active: true,
+    createdAt: new Date().toISOString()
+  };
+  if (useFirebase) {
+    await fbSet('users', masterId, masterData);
+    // Also create Firebase Auth user
+    try {
+      await createUserWithEmailAndPassword(auth, 'admin@tools.local', 'admin123');
+    } catch(e) { /* already exists */ }
+  } else {
+    await sbSet('users', masterId, masterData);
+  }
+  users[masterId] = { id: masterId, ...masterData };
+}
+
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString(36);
+}
+
+// ═══════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════
+function setupLoginUI() {
+  document.getElementById('login-btn').addEventListener('click', handleLogin);
+  document.getElementById('login-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleLogin();
+  });
+  document.getElementById('change-pwd-btn').addEventListener('click', handleChangePwd);
+}
+
+async function handleLogin() {
+  const uid = document.getElementById('login-user-select').value;
+  const pwd = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.className = 'login-error';
+
+  if (!uid) { showError(errEl, 'Seleziona un utente.'); return; }
+  if (!pwd) { showError(errEl, 'Inserisci la password.'); return; }
+
+  const user = users[uid];
+  if (!user) { showError(errEl, 'Utente non trovato.'); return; }
+
+  if (simpleHash(pwd) !== user.passwordHash) {
+    showError(errEl, 'Password errata.');
+    return;
+  }
+
+  currentUser = { ...user };
+
+  if (user.mustChangePwd) {
+    document.getElementById('login-form-container').style.display = 'none';
+    document.getElementById('change-pwd-container').style.display = 'block';
+    return;
+  }
+
+  await loginSuccess();
+}
+
+async function handleChangePwd() {
+  const newPwd = document.getElementById('new-password').value;
+  const confPwd = document.getElementById('confirm-password').value;
+  const errEl = document.getElementById('change-pwd-error');
+  errEl.className = 'login-error';
+
+  if (newPwd.length < 6) { showError(errEl, 'La password deve essere di almeno 6 caratteri.'); return; }
+  if (newPwd !== confPwd) { showError(errEl, 'Le password non coincidono.'); return; }
+
+  await dbSet('users', currentUser.id, { passwordHash: simpleHash(newPwd), mustChangePwd: false });
+  currentUser.mustChangePwd = false;
+  currentUser.passwordHash = simpleHash(newPwd);
+  users[currentUser.id] = { ...currentUser };
+
+  await loginSuccess();
+}
+
+async function loginSuccess() {
+  await dbSet('users', currentUser.id, { status: 'online', lastSeen: new Date().toISOString() });
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('show');
+
+  document.getElementById('tb-username').textContent = currentUser.username;
+  document.getElementById('tb-avatar').textContent = currentUser.username[0].toUpperCase();
+  document.getElementById('tb-avatar').className = 'titlebar-avatar ' + currentUser.avatarColor;
+
+  setupAppEvents();
+  startListeners();
+  renderSidebar();
+}
+
+function showError(el, msg) {
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+// ═══════════════════════════════════════════════
+// APP EVENTS
+// ═══════════════════════════════════════════════
+function setupAppEvents() {
+  // Tabs
+  document.querySelectorAll('.sidebar-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeTab = tab.dataset.tab;
+      renderSidebar();
+      document.getElementById('new-group-area').style.display = activeTab === 'groups' ? '' : 'none';
+    });
+  });
+
+  // Search
+  document.getElementById('sidebar-search').addEventListener('input', e => {
+    searchQuery = e.target.value.toLowerCase();
+    renderSidebar();
+  });
+
+  // Send
+  document.getElementById('send-btn').addEventListener('click', sendMessage);
+  document.getElementById('chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    notifyTyping();
+  });
+
+  // New group
+  document.getElementById('btn-new-group').addEventListener('click', openNewGroupModal);
+  document.getElementById('btn-create-group').addEventListener('click', createGroup);
+
+  // Status
+  document.getElementById('btn-change-status').addEventListener('click', () => {
+    document.getElementById('modal-status').classList.add('show');
+  });
+
+  // Logout
+  document.getElementById('btn-logout').addEventListener('click', logout);
+
+  // Clear chat
+  document.getElementById('btn-clear-chat').addEventListener('click', clearChat);
+
+  // Emoji
+  document.getElementById('btn-emoji').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('emoji-picker').classList.toggle('show');
+  });
+
+  document.addEventListener('click', () => {
+    document.getElementById('emoji-picker').classList.remove('show');
+  });
+
+  // Auto resize textarea
+  const input = document.getElementById('chat-input');
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+}
+
+// ═══════════════════════════════════════════════
+// BOSS KEY
+// ═══════════════════════════════════════════════
+function setupBossKey() {
+  document.addEventListener('keydown', e => {
+    if (e.altKey && e.code === BOSS_KEY) {
+      bossMode = !bossMode;
+      document.getElementById('fake-google').className = bossMode ? 'show' : '';
+      if (bossMode) {
+        stopTitleFlash();
+        document.title = 'Google';
+        document.getElementById('google-input').focus();
+      } else {
+        document.title = 'Tools';
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// LISTENERS / REALTIME
+// ═══════════════════════════════════════════════
+function startListeners() {
+  if (useFirebase) {
+    // Listen users
+    usersUnsubscribe = onSnapshot(collection(db, 'users'), snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type !== 'removed') {
+          users[change.doc.id] = { id: change.doc.id, ...change.doc.data() };
+        }
+      });
+      renderSidebar();
+    });
+
+    // Listen conversations
+    convUnsubscribe = onSnapshot(collection(db, 'conversations'), snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type !== 'removed') {
+          conversations[change.doc.id] = { id: change.doc.id, ...change.doc.data() };
+        } else {
+          delete conversations[change.doc.id];
+        }
+      });
+      renderSidebar();
+    });
+  } else {
+    // Poll for Supabase
+    setInterval(async () => {
+      users = await sbGetAll('users');
+      conversations = await sbGetAll('conversations');
+      renderSidebar();
+      if (currentConv) pollMessages();
+    }, POLL_INTERVAL);
+  }
+}
+
+async function openConversation(conv) {
+  currentConv = conv;
+
+  // Unsubscribe previous
+  if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
+
+  // Show chat area
+  document.getElementById('chat-empty').style.display = 'none';
+  const chatMain = document.getElementById('chat-main');
+  chatMain.style.display = 'flex';
+  chatMain.style.flexDirection = 'column';
+  chatMain.style.flex = '1';
+  chatMain.style.overflow = 'hidden';
+
+  // Header
+  const isGroup = conv.type === 'group';
+  const avatarEl = document.getElementById('chat-header-avatar');
+  const nameEl = document.getElementById('chat-header-name');
+  const statusEl = document.getElementById('chat-header-status');
+
+  if (isGroup) {
+    avatarEl.textContent = '👥';
+    avatarEl.className = 'chat-header-avatar group-icon';
+    nameEl.textContent = conv.name;
+    const memberNames = (conv.participants || []).map(uid => users[uid]?.username || '?').join(', ');
+    statusEl.textContent = memberNames;
+  } else {
+    const otherId = conv.participants.find(p => p !== currentUser.id);
+    const other = users[otherId];
+    avatarEl.textContent = other?.username?.[0]?.toUpperCase() || '?';
+    avatarEl.className = 'chat-header-avatar ' + (other?.avatarColor || 'av-blue');
+    nameEl.textContent = other?.username || '?';
+    statusEl.textContent = statusLabel(other?.status);
+  }
+
+  // Show/hide clear button based on role
+  document.getElementById('btn-clear-chat').style.display = '';
+
+  // Listen messages
+  if (useFirebase) {
+    const q = query(collection(db, 'messages'), where('convId', '==', conv.id), orderBy('timestamp'));
+    messagesUnsubscribe = onSnapshot(q, snap => {
+      renderMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  } else {
+    await pollMessages();
+  }
+
+  // Mark as read
+  unreadCounts[conv.id] = 0;
+  renderSidebar();
+  document.getElementById('chat-input').focus();
+}
+
+async function pollMessages() {
+  if (!currentConv) return;
+  const res = await sbReq('GET', 'messages', null, `?conv_id=eq.${currentConv.id}&order=timestamp.asc`);
+  if (res) renderMessages(res.map(m => ({ id: m.id, convId: m.conv_id, senderId: m.sender_id, text: m.text, timestamp: m.timestamp })));
+}
+
+// ═══════════════════════════════════════════════
+// RENDER MESSAGES
+// ═══════════════════════════════════════════════
+function renderMessages(messages) {
+  const container = document.getElementById('chat-messages');
+  const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+
+  // Check for new messages (for notification)
+  const lastSeen = lastSeenMessages[currentConv?.id] || 0;
+  let hasNew = false;
+
+  container.innerHTML = '';
+  let lastDate = '';
+  let lastSender = '';
+  let groupEl = null;
+
+  messages.forEach((msg, idx) => {
+    const ts = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date(msg.timestamp);
+    const dateStr = ts.toLocaleDateString('it-IT');
+    const isSelf = msg.senderId === currentUser.id;
+    const sender = users[msg.senderId];
+
+    if (dateStr !== lastDate) {
+      lastDate = dateStr;
+      const sep = document.createElement('div');
+      sep.className = 'msg-date-separator';
+      sep.textContent = dateStr;
+      container.appendChild(sep);
+      lastSender = '';
+    }
+
+    if (lastSender !== msg.senderId) {
+      groupEl = document.createElement('div');
+      groupEl.className = 'msg-group ' + (isSelf ? 'self' : 'other');
+      if (!isSelf && currentConv?.type === 'group') {
+        const sn = document.createElement('div');
+        sn.className = 'msg-sender';
+        sn.textContent = sender?.username || '?';
+        groupEl.appendChild(sn);
+      }
+      container.appendChild(groupEl);
+      lastSender = msg.senderId;
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.innerHTML = formatMessage(msg.text);
+
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = ts.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+    groupEl.appendChild(bubble);
+    groupEl.appendChild(time);
+
+    if (idx === messages.length - 1) {
+      lastSeenMessages[currentConv?.id] = ts.getTime();
+    }
+  });
+
+  if (wasAtBottom || messages.length > 0) {
+    container.scrollTop = container.scrollHeight;
+  }
+
+  // Notify if new messages from others
+  if (!bossMode && document.hidden) {
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg && lastMsg.senderId !== currentUser.id) {
+      startTitleFlash();
+    }
+  }
+}
+
+function formatMessage(text) {
+  if (!text) return '';
+  // Escape HTML
+  let t = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Links
+  t = t.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  // Bold
+  t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic
+  t = t.replace(/_(.+?)_/g, '<em>$1</em>');
+  // Newlines
+  t = t.replace(/\n/g, '<br>');
+  return t;
+}
+
+// ═══════════════════════════════════════════════
+// SEND MESSAGE
+// ═══════════════════════════════════════════════
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || !currentConv) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  const msgData = {
+    convId: currentConv.id,
+    senderId: currentUser.id,
+    text,
+    timestamp: useFirebase ? serverTimestamp() : new Date().toISOString()
+  };
+
+  try {
+    if (useFirebase) {
+      await fbAdd('messages', msgData);
+      // Update conversation last message
+      await fbSet('conversations', currentConv.id, {
+        lastMessage: text.substring(0, 50),
+        lastTimestamp: serverTimestamp(),
+        lastSenderId: currentUser.id
+      });
+    } else {
+      await sbReq('POST', 'messages', {
+        conv_id: currentConv.id,
+        sender_id: currentUser.id,
+        text,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch(e) {
+    // Try other service
+    if (useFirebase && supabaseOk) {
+      useFirebase = false;
+      updateStatusBar();
+      await sendMessage();
+    } else {
+      alert('Errore invio messaggio: ' + e.message);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// TYPING INDICATOR
+// ═══════════════════════════════════════════════
+async function notifyTyping() {
+  if (!currentConv || !useFirebase) return;
+  await fbSet('typing', currentUser.id, {
+    convId: currentConv.id,
+    username: currentUser.username,
+    ts: serverTimestamp()
+  });
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(async () => {
+    await fbDelete('typing', currentUser.id);
+  }, TYPING_TIMEOUT);
+}
+
+// ═══════════════════════════════════════════════
+// SIDEBAR RENDER
+// ═══════════════════════════════════════════════
+function renderSidebar() {
+  const list = document.getElementById('contacts-list');
+  list.innerHTML = '';
+
+  if (activeTab === 'direct') {
+    const otherUsers = Object.values(users).filter(u => u.id !== currentUser.id && u.active !== false);
+    const filtered = otherUsers.filter(u => !searchQuery || u.username.toLowerCase().includes(searchQuery));
+
+    if (filtered.length === 0) {
+      list.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center">Nessun utente</div>';
+      return;
+    }
+
+    // Sort: online first
+    filtered.sort((a,b) => {
+      const order = { online: 0, away: 1, offline: 2 };
+      return (order[a.status] || 2) - (order[b.status] || 2);
+    });
+
+    filtered.forEach(u => {
+      const convId = getDirectConvId(currentUser.id, u.id);
+      const unread = unreadCounts[convId] || 0;
+      const item = createContactItem({
+        id: convId,
+        name: u.username,
+        avatarLetter: u.username[0].toUpperCase(),
+        avatarColor: u.avatarColor || 'av-blue',
+        status: u.status,
+        type: 'direct',
+        participants: [currentUser.id, u.id]
+      }, unread);
+      list.appendChild(item);
+    });
+  } else {
+    // Groups
+    const myGroups = Object.values(conversations).filter(c =>
+      c.type === 'group' &&
+      c.participants?.includes(currentUser.id)
+    );
+    const filtered = myGroups.filter(g => !searchQuery || g.name?.toLowerCase().includes(searchQuery));
+
+    if (filtered.length === 0) {
+      list.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center">Nessun gruppo</div>';
+    } else {
+      filtered.forEach(g => {
+        const unread = unreadCounts[g.id] || 0;
+        const item = createContactItem({
+          id: g.id,
+          name: g.name,
+          avatarLetter: '👥',
+          avatarColor: 'group-icon',
+          status: null,
+          type: 'group',
+          participants: g.participants || []
+        }, unread, true);
+        list.appendChild(item);
+      });
+    }
+
+    document.getElementById('new-group-area').style.display = '';
+  }
+}
+
+function createContactItem(conv, unread, isGroup = false) {
+  const item = document.createElement('div');
+  item.className = 'contact-item' + (currentConv?.id === conv.id ? ' active' : '');
+
+  const avatar = document.createElement('div');
+  avatar.className = 'contact-avatar ' + (isGroup ? 'group-icon' : conv.avatarColor);
+  avatar.textContent = conv.avatarLetter;
+
+  if (!isGroup && conv.status) {
+    const dot = document.createElement('div');
+    dot.className = 'status-dot status-' + (conv.status || 'offline');
+    avatar.appendChild(dot);
+  }
+
+  const info = document.createElement('div');
+  info.className = 'contact-info';
+
+  const name = document.createElement('div');
+  name.className = 'contact-name';
+  name.textContent = conv.name;
+
+  const preview = document.createElement('div');
+  preview.className = 'contact-preview';
+  preview.textContent = isGroup ? `${conv.participants.length} partecipanti` : statusLabel(conv.status);
+
+  info.appendChild(name);
+  info.appendChild(preview);
+  item.appendChild(avatar);
+  item.appendChild(info);
+
+  if (unread > 0) {
+    const badge = document.createElement('div');
+    badge.className = 'contact-badge';
+    badge.textContent = unread;
+    item.appendChild(badge);
+  }
+
+  item.addEventListener('click', async () => {
+    // Get or create conversation
+    let convData = conversations[conv.id];
+    if (!convData && conv.type === 'direct') {
+      convData = {
+        id: conv.id,
+        type: 'direct',
+        participants: conv.participants,
+        createdAt: new Date().toISOString()
+      };
+      await dbSet('conversations', conv.id, convData);
+      conversations[conv.id] = convData;
+    }
+    await openConversation(convData || conv);
+    renderSidebar();
+  });
+
+  return item;
+}
+
+function getDirectConvId(uid1, uid2) {
+  return [uid1, uid2].sort().join('_');
+}
+
+function statusLabel(status) {
+  const labels = { online: '🟢 Online', away: '🟡 Assente', offline: '⚫ Non disponibile' };
+  return labels[status] || '⚫ Non disponibile';
+}
+
+// ═══════════════════════════════════════════════
+// GROUPS
+// ═══════════════════════════════════════════════
+async function openNewGroupModal() {
+  // Count existing groups
+  const myGroups = Object.values(conversations).filter(c => c.type === 'group');
+  const freeGroupsCount = myGroups.filter(g => !g.createdByMaster).length;
+  
+  if (freeGroupsCount >= MAX_FREE_GROUPS && currentUser.role !== 'master') {
+    alert(`Hai raggiunto il limite di ${MAX_FREE_GROUPS} gruppi. Solo l'amministratore può crearne altri.`);
+    return;
+  }
+
+  document.getElementById('group-name-input').value = '';
+  const membersList = document.getElementById('group-members-list');
+  membersList.innerHTML = '';
+
+  Object.values(users).filter(u => u.id !== currentUser.id && u.active !== false).forEach(u => {
+    const item = document.createElement('div');
+    item.className = 'member-item';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = 'member_' + u.id;
+    cb.value = u.id;
+    const lbl = document.createElement('label');
+    lbl.htmlFor = 'member_' + u.id;
+    lbl.textContent = u.username;
+    item.appendChild(cb);
+    item.appendChild(lbl);
+    membersList.appendChild(item);
+  });
+
+  document.getElementById('modal-new-group').classList.add('show');
+}
+
+async function createGroup() {
+  const name = document.getElementById('group-name-input').value.trim();
+  if (!name) { alert('Inserisci un nome per il gruppo.'); return; }
+
+  const selectedMembers = Array.from(document.querySelectorAll('#group-members-list input:checked')).map(cb => cb.value);
+  const participants = [currentUser.id, ...selectedMembers];
+
+  const groupData = {
+    type: 'group',
+    name,
+    participants,
+    createdBy: currentUser.id,
+    createdByMaster: currentUser.role === 'master',
+    createdAt: new Date().toISOString()
+  };
+
+  const id = 'grp_' + Date.now();
+  await dbSet('conversations', id, groupData);
+  conversations[id] = { id, ...groupData };
+
+  closeModal('modal-new-group');
+  renderSidebar();
+  await openConversation({ id, ...groupData });
+}
+
+// ═══════════════════════════════════════════════
+// CLEAR CHAT
+// ═══════════════════════════════════════════════
+async function clearChat() {
+  if (!currentConv) return;
+
+  const isGroup = currentConv.type === 'group';
+  if (isGroup && currentUser.role !== 'master') {
+    alert('Solo l\'amministratore può pulire le chat di gruppo.');
+    return;
+  }
+
+  if (!confirm('Sei sicuro di voler eliminare tutti i messaggi di questa conversazione?')) return;
+
+  if (useFirebase) {
+    const q = query(collection(db, 'messages'), where('convId', '==', currentConv.id));
+    const snap = await getDocs(q);
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  } else {
+    await sbReq('DELETE', 'messages', null, `?conv_id=eq.${currentConv.id}`);
+  }
+
+  document.getElementById('chat-messages').innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════
+// STATUS
+// ═══════════════════════════════════════════════
+async function setStatus(status) {
+  await dbSet('users', currentUser.id, { status });
+  currentUser.status = status;
+  const labels = { online: '● Online', away: '◐ Assente', offline: '○ Non disp.' };
+  document.getElementById('btn-change-status').textContent = labels[status];
+  closeModal('modal-status');
+}
+
+// ═══════════════════════════════════════════════
+// LOGOUT
+// ═══════════════════════════════════════════════
+async function logout() {
+  if (!confirm('Vuoi disconnetterti?')) return;
+  await dbSet('users', currentUser.id, { status: 'offline' });
+  if (useFirebase) { try { await signOut(auth); } catch(e) {} }
+  if (messagesUnsubscribe) messagesUnsubscribe();
+  if (usersUnsubscribe) usersUnsubscribe();
+  if (convUnsubscribe) convUnsubscribe();
+  currentUser = null;
+  currentConv = null;
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-form-container').style.display = '';
+  document.getElementById('change-pwd-container').style.display = 'none';
+  await loadUsersForLogin();
+}
+
+// ═══════════════════════════════════════════════
+// TITLE FLASH
+// ═══════════════════════════════════════════════
+function startTitleFlash() {
+  if (titleFlashInterval || bossMode) return;
+  let tog = false;
+  titleFlashInterval = setInterval(() => {
+    document.title = tog ? '💬 Nuovo messaggio!' : 'Tools';
+    tog = !tog;
+  }, 800);
+  document.addEventListener('visibilitychange', stopTitleFlash, { once: true });
+  window.addEventListener('focus', stopTitleFlash, { once: true });
+}
+
+function stopTitleFlash() {
+  clearInterval(titleFlashInterval);
+  titleFlashInterval = null;
+  if (!bossMode) document.title = 'Tools';
+}
+
+// ═══════════════════════════════════════════════
+// EMOJI PICKER
+// ═══════════════════════════════════════════════
+function setupEmojiPicker() {
+  const grid = document.getElementById('emoji-grid');
+  EMOJIS.forEach(em => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn';
+    btn.textContent = em;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const input = document.getElementById('chat-input');
+      input.value += em;
+      input.focus();
+      document.getElementById('emoji-picker').classList.remove('show');
+    });
+    grid.appendChild(btn);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+window.closeModal = closeModal;
+
+window.wrapText = function(before, after) {
+  const input = document.getElementById('chat-input');
+  const start = input.selectionStart;
+  const end = input.selectionEnd;
+  const selected = input.value.substring(start, end);
+  input.value = input.value.substring(0, start) + before + selected + after + input.value.substring(end);
+  input.focus();
+};
+
+window.setStatus = setStatus;
+
+// Click outside modal to close
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('show');
+  });
+});
+
+// ═══════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
