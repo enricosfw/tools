@@ -135,7 +135,7 @@
 
   /* INPUT */
   .chat-input-area { padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
-  .input-box { border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+  .input-box { border: 1px solid var(--border); border-radius: 3px; overflow: visible; }
   .input-box:focus-within { border-color: var(--primary); }
   .input-toolbar { display: flex; gap: 2px; padding: 4px 6px; border-bottom: 1px solid var(--border-light); background: var(--bg); }
   .t-btn { background: none; border: none; padding: 3px 6px; border-radius: 2px; cursor: pointer; font-size: 14px; color: var(--text-secondary); position: relative; }
@@ -146,7 +146,7 @@
   .send-btn:hover { background: var(--primary-hover); }
 
   /* EMOJI */
-  .emoji-picker { display: none; position: absolute; bottom: calc(100% + 4px); left: 0; background: white; border: 1px solid var(--border); border-radius: 4px; box-shadow: var(--shadow-md); padding: 8px; width: 280px; z-index: 100; }
+  .emoji-picker { display: none; position: fixed; background: white; border: 1px solid var(--border); border-radius: 4px; box-shadow: var(--shadow-md); padding: 8px; width: 280px; z-index: 9999; }
   .emoji-picker.show { display: block; }
   .emoji-grid { display: grid; grid-template-columns: repeat(8,1fr); gap: 2px; }
   .emoji-btn { background: none; border: none; font-size: 20px; padding: 4px; border-radius: 3px; cursor: pointer; }
@@ -213,7 +213,8 @@
       <div class="login-title">Accedi</div>
       <div class="login-subtitle">Inserisci le tue credenziali per continuare</div>
       <div class="alert alert-error" id="login-err"></div>
-      <div class="form-field"><label class="form-label">Utente <span class="req">*</span></label><select class="form-select" id="login-user-sel"><option value="">— Seleziona utente —</option></select></div>
+      <div class="form-field" id="login-email-wrap" style="display:none"><label class="form-label">Nome utente o email <span class="req">*</span></label><input type="text" class="form-input" id="login-email" placeholder="es. enrico.sfw@gmail.com oppure Mario"></div>
+      <div class="form-field" id="login-user-wrap"><label class="form-label">Utente <span class="req">*</span></label><select class="form-select" id="login-user-sel"><option value="">— Seleziona utente —</option></select></div>
       <div class="form-field"><label class="form-label">Password <span class="req">*</span></label><input type="password" class="form-input" id="login-pwd" placeholder="Password"></div>
       <button class="btn btn-primary btn-full" id="login-btn" style="margin-top:8px">Accedi</button>
     </div>
@@ -320,6 +321,7 @@
       <input type="hidden" id="uform-id">
       <div class="form-field"><label class="form-label">Nome utente <span class="req">*</span></label><input type="text" class="form-input" id="uform-name" placeholder="es. Mario Rossi"></div>
       <div class="form-field" id="uform-pwd-field"><label class="form-label">Password temporanea <span class="req">*</span></label><input type="text" class="form-input" id="uform-pwd"><div class="form-hint">L'utente la cambierà al primo accesso</div></div>
+      <div class="form-field" id="uform-adminpwd-wrap" style="display:none"><label class="form-label">Tua password (admin) <span class="req">*</span></label><input type="password" class="form-input" id="uform-adminpwd" placeholder="Per creare l'utente Firebase"><div class="form-hint">Necessaria per confermare l'operazione</div></div>
       <div class="form-field"><label class="form-label">Colore avatar</label><select class="form-select" id="uform-color"><option value="av-blue">Blu</option><option value="av-teal">Verde acqua</option><option value="av-green">Verde</option><option value="av-orange">Arancione</option><option value="av-red">Rosso</option><option value="av-purple">Viola</option><option value="av-pink">Rosa</option><option value="av-darkblue">Blu scuro</option></select></div>
     </div>
     <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modal-uform')">Annulla</button><button class="btn btn-primary" id="btn-saveuser">Salva</button></div>
@@ -369,6 +371,7 @@
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, onSnapshot, query, orderBy, where, serverTimestamp, deleteDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const FB_CFG = { apiKey:"AIzaSyA05k5rK3d7PRzYQuJts4GWPZ87Io2Rkn4", authDomain:"tools-7a350.firebaseapp.com", projectId:"tools-7a350", storageBucket:"tools-7a350.firebasestorage.app", messagingSenderId:"176859022672", appId:"1:176859022672:web:e459602ef3db9c73929855" };
 const SB_URL = "https://wepnxspgqlaqkhvgynor.supabase.co";
@@ -377,23 +380,57 @@ const MAX_FREE_GROUPS = 5;
 const BOSS_KEY = 'KeyH';
 const TYPING_TO = 3000;
 const POLL_MS = 3000;
+const HEARTBEAT_MS = 30000;
+const OFFLINE_THRESHOLD_MS = 60000;
+const SESSION_KEY = 'tools_chat_session';
 const AV_COLORS = ['av-blue','av-teal','av-green','av-orange','av-red','av-purple','av-pink','av-darkblue'];
 const EMOJIS = ['😀','😂','😍','🤔','👍','👎','❤️','🔥','✅','❌','⚠️','🎉','😊','🙏','💪','😅','🤣','😎','🥳','😴','🤦','🙄','😤','👋','🤝','💡','📌','📎','🔔','⏰','📅','💻','📧','📞','🏠','🚀','💰','📊','✏️','🗑️'];
 
-let db, useFB = true, fbOk = false, sbOk = false;
+let db, auth, useFB = true, fbOk = false, sbOk = false;
 let me = null, users = {}, convs = {};
 let curConv = null, activeTab = 'direct';
 let bossMode = false, titleFlash = null;
 let unread = {}, typingTO = null;
 let unsub = { msgs: null, users: null, convs: null, typing: null };
 let editGrpId = null, searchQ = '';
+let heartbeatInterval = null;
 
 async function init() {
-  setupEmoji(); setupBossKey(); setupLoginHandlers();
-  try { const app = initializeApp(FB_CFG); db = getFirestore(app); await getDocs(query(collection(db,'users'))); fbOk = true; useFB = true; } catch(e) { fbOk = false; useFB = false; }
+  setupEmoji(); setupBossKey();
+  let app;
+  try {
+    app = initializeApp(FB_CFG);
+    db = getFirestore(app);
+    auth = getAuth(app);
+    fbOk = true;
+    useFB = true;
+  } catch(e) { fbOk = false; useFB = false; }
   try { const r = await fetch(`${SB_URL}/rest/v1/users?select=id&limit=1`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`}}); sbOk = r.ok||r.status===406; } catch(e) { sbOk=false; }
-  updateSvc(); await loadLoginUsers();
+  updateSvc();
+  setupLoginHandlers();
+  if(useFB && auth) {
+    document.getElementById('login-email-wrap').style.display='';
+    document.getElementById('login-user-wrap').style.display='none';
+    document.getElementById('login-pwd').addEventListener('keydown',e=>e.key==='Enter'&&doLogin());
+    onAuthStateChanged(auth,async(user)=>{
+      if(user){
+        try {
+          const uDoc=await getDoc(doc(db,'users',user.uid));
+          if(uDoc.exists()){ me={id:user.uid,email:user.email,...uDoc.data()}; await loginOk(); }
+          else { await signOut(auth); showLoginErr('Profilo utente non trovato in Firestore.'); }
+        } catch(e){ await signOut(auth); showLoginErr('Errore caricamento profilo: '+e.message); }
+      } else {
+        document.getElementById('login-screen').style.display='flex';
+        document.getElementById('app').classList.remove('show');
+        await loadLoginUsers();
+      }
+    });
+  } else {
+    await loadLoginUsers();
+    await tryRestoreSession();
+  }
 }
+function showLoginErr(msg){ const err=document.getElementById('login-err'); err.className='alert alert-error show'; err.textContent=msg; }
 
 function updateSvc() {
   document.getElementById('fb-dot').className = 'svc-dot'+(fbOk?'':' error');
@@ -423,6 +460,7 @@ async function dbAdd(col,data) { if(useFB)return fbAdd(col,data); const r=await 
 async function dbAll(col) { return useFB?fbAll(col):sbAll(col); }
 
 async function loadLoginUsers() {
+  if(useFB) return;
   const sel = document.getElementById('login-user-sel');
   try {
     users = await dbAll('users');
@@ -442,23 +480,34 @@ async function createMaster() {
 
 function setupLoginHandlers() {
   document.getElementById('login-btn').addEventListener('click', doLogin);
-  document.getElementById('login-pwd').addEventListener('keydown', e=>e.key==='Enter'&&doLogin());
+  if(!useFB||!auth) document.getElementById('login-pwd').addEventListener('keydown', e=>e.key==='Enter'&&doLogin());
   document.getElementById('cpwd-btn').addEventListener('click', doFirstPwd);
 }
 
 async function doLogin() {
-  const uid=document.getElementById('login-user-sel').value;
   const pwd=document.getElementById('login-pwd').value;
   const err=document.getElementById('login-err');
   err.className='alert alert-error';
-  if(!uid){showAlert(err,'Seleziona un utente.');return;}
   if(!pwd){showAlert(err,'Inserisci la password.');return;}
-  const u=users[uid];
-  if(!u){showAlert(err,'Utente non trovato.');return;}
-  if(hash(pwd)!==u.passwordHash){showAlert(err,'Password errata.');return;}
-  me={...u};
-  if(u.mustChangePwd){document.getElementById('pnl-login').style.display='none';document.getElementById('pnl-change-pwd').style.display='';return;}
-  await loginOk();
+  if(useFB&&auth){
+    const input=document.getElementById('login-email').value.trim();
+    if(!input){showAlert(err,'Inserisci nome utente o email.');return;}
+    const email=input.includes('@')?input:(input.toLowerCase().replace(/[\s.-]+/g,'')||'user')+'@tools-chat.local';
+    try{
+      await signInWithEmailAndPassword(auth,email,pwd);
+    }catch(e){
+      showAlert(err,e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'?'Credenziali errate.':e.message);
+    }
+  } else {
+    const uid=document.getElementById('login-user-sel').value;
+    if(!uid){showAlert(err,'Seleziona un utente.');return;}
+    const u=users[uid];
+    if(!u){showAlert(err,'Utente non trovato.');return;}
+    if(hash(pwd)!==u.passwordHash){showAlert(err,'Password errata.');return;}
+    me={...u};
+    if(u.mustChangePwd){document.getElementById('pnl-change-pwd').dataset.userId=uid; document.getElementById('pnl-login').style.display='none';document.getElementById('pnl-change-pwd').style.display='';return;}
+    await loginOk();
+  }
 }
 
 async function doFirstPwd() {
@@ -469,11 +518,16 @@ async function doFirstPwd() {
   if(np!==cp){showAlert(err,'Le password non coincidono.');return;}
   await dbSet('users',me.id,{passwordHash:hash(np),mustChangePwd:false});
   me.passwordHash=hash(np); me.mustChangePwd=false; users[me.id]={...me};
+  saveSession();
   await loginOk();
 }
 
 async function loginOk() {
-  await dbSet('users',me.id,{status:'online',lastSeen:new Date().toISOString()});
+  await dbSet('users',me.id,{status:me.status||'online',lastSeen:new Date().toISOString()});
+  saveSession();
+  startHeartbeat();
+  document.addEventListener('visibilitychange',onVisibilityChange);
+  window.addEventListener('beforeunload',onBeforeUnload);
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').classList.add('show');
   document.getElementById('tb-name').textContent=me.username;
@@ -481,6 +535,35 @@ async function loginOk() {
   if(me.role==='master')document.getElementById('btn-admin').style.display='';
   setupAppHandlers(); startListeners(); renderSidebar();
 }
+
+function saveSession(){ try { localStorage.setItem(SESSION_KEY,JSON.stringify({userId:me?.id,passwordHash:me?.passwordHash})); } catch(e){} }
+function clearSession(){ try { localStorage.removeItem(SESSION_KEY); } catch(e){} }
+
+async function tryRestoreSession() {
+  let raw; try { raw=localStorage.getItem(SESSION_KEY); } catch(e){ return; }
+  if(!raw)return;
+  let sess; try { sess=JSON.parse(raw); } catch(e){ clearSession(); return; }
+  const u=users[sess.userId];
+  if(!u||u.passwordHash!==sess.passwordHash||u.active===false){ clearSession(); return; }
+  me={...u};
+  if(me.mustChangePwd){ document.getElementById('pnl-login').style.display='none'; document.getElementById('pnl-change-pwd').style.display=''; document.getElementById('pnl-change-pwd').dataset.userId=me.id; return; }
+  await loginOk();
+}
+
+function startHeartbeat() {
+  stopHeartbeat();
+  heartbeatInterval=setInterval(async()=>{
+    if(!me)return;
+    try{ await dbSet('users',me.id,{lastSeen:new Date().toISOString()}); }catch(e){}
+  },HEARTBEAT_MS);
+}
+function stopHeartbeat() { if(heartbeatInterval){ clearInterval(heartbeatInterval); heartbeatInterval=null; } }
+
+function onVisibilityChange() {
+  if(document.hidden) { try{ if(me) dbSet('users',me.id,{status:'offline',lastSeen:new Date().toISOString()}); }catch(e){} stopHeartbeat(); }
+  else if(me) { startHeartbeat(); try{ dbSet('users',me.id,{status:me.status||'online',lastSeen:new Date().toISOString()}); }catch(e){} }
+}
+function onBeforeUnload() { try{ if(me) dbSet('users',me.id,{status:'offline',lastSeen:new Date().toISOString()}); }catch(e){} }
 
 function setupAppHandlers() {
   document.querySelectorAll('.sb-tab').forEach(t=>t.addEventListener('click',()=>{
@@ -507,7 +590,16 @@ function setupAppHandlers() {
   });
   document.getElementById('btn-savepwd').addEventListener('click',saveMyPwd);
   document.getElementById('btn-doresetpwd').addEventListener('click',doResetPwd);
-  document.getElementById('btn-emoji').addEventListener('click',e=>{e.stopPropagation();document.getElementById('emoji-picker').classList.toggle('show');});
+  document.getElementById('btn-emoji').addEventListener('click',e=>{
+    e.stopPropagation();
+    const picker=document.getElementById('emoji-picker');
+    const btn=document.getElementById('btn-emoji');
+    if(picker.classList.toggle('show')===true){
+      const r=btn.getBoundingClientRect();
+      picker.style.left=Math.min(Math.max(8,r.left),window.innerWidth-296)+'px';
+      picker.style.top=(r.top-picker.offsetHeight-8)+'px';
+    }
+  });
   document.addEventListener('click',()=>document.getElementById('emoji-picker').classList.remove('show'));
   document.getElementById('btn-bold').addEventListener('click',()=>wrapText('**','**'));
   document.getElementById('btn-italic').addEventListener('click',()=>wrapText('_','_'));
@@ -548,7 +640,7 @@ function updateChatHeader() {
   if(!curConv)return;
   const av=document.getElementById('ch-av'),nm=document.getElementById('ch-name'),st=document.getElementById('ch-status');
   if(curConv.type==='group'){av.textContent='👥';av.className='ch-av group-icon';nm.textContent=curConv.name;st.textContent=(curConv.participants||[]).map(u=>users[u]?.username||'?').join(', ');}
-  else {const o=users[curConv.participants?.find(p=>p!==me.id)];av.textContent=o?.username?.[0]?.toUpperCase()||'?';av.className='ch-av '+(o?.avatarColor||'av-blue');nm.textContent=o?.username||'?';st.textContent=sLabel(o?.status);}
+  else {const o=users[curConv.participants?.find(p=>p!==me.id)];av.textContent=o?.username?.[0]?.toUpperCase()||'?';av.className='ch-av '+(o?.avatarColor||'av-blue');nm.textContent=o?.username||'?';st.textContent=sLabel(effectiveStatus(o));}
 }
 
 async function pollMsgs() {
@@ -603,9 +695,9 @@ async function notifyTyping() {
 function renderSidebar() {
   const list=document.getElementById('sb-list'); list.innerHTML='';
   if(activeTab==='direct'){
-    const others=Object.values(users).filter(u=>u.id!==me.id&&u.active!==false).filter(u=>!searchQ||u.username.toLowerCase().includes(searchQ)).sort((a,b)=>{const o={online:0,away:1,offline:2};return(o[a.status]||2)-(o[b.status]||2);});
+    const others=Object.values(users).filter(u=>u.id!==me.id&&u.active!==false).filter(u=>!searchQ||u.username.toLowerCase().includes(searchQ)).sort((a,b)=>{const o={online:0,away:1,offline:2};return(o[effectiveStatus(a)]||2)-(o[effectiveStatus(b)]||2);});
     if(!others.length){list.innerHTML='<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center">Nessun utente</div>';return;}
-    others.forEach(u=>{const cid=cId(me.id,u.id);list.appendChild(mkItem({id:cid,name:u.username,letter:u.username[0].toUpperCase(),color:u.avatarColor||'av-blue',status:u.status,type:'direct',participants:[me.id,u.id]},unread[cid]||0));});
+    others.forEach(u=>{const cid=cId(me.id,u.id);list.appendChild(mkItem({id:cid,name:u.username,letter:u.username[0].toUpperCase(),color:u.avatarColor||'av-blue',status:effectiveStatus(u),type:'direct',participants:[me.id,u.id]},unread[cid]||0));});
   } else {
     const grps=Object.values(convs).filter(c=>c.type==='group'&&c.participants?.includes(me.id)).filter(g=>!searchQ||g.name?.toLowerCase().includes(searchQ));
     if(!grps.length)list.innerHTML='<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center">Nessun gruppo</div>';
@@ -620,7 +712,7 @@ function mkItem(c,badge,isGrp=false) {
   if(!isGrp&&c.status){const d=document.createElement('div');d.className='s-dot s-'+(c.status||'offline');av.appendChild(d);}
   const info=document.createElement('div'); info.className='c-info';
   const nm=document.createElement('div'); nm.className='c-name'; nm.textContent=c.name;
-  const pr=document.createElement('div'); pr.className='c-prev'; pr.textContent=isGrp?`${c.participants.length} partecipanti`:sLabel(c.status);
+  const pr=document.createElement('div'); pr.className='c-prev'; pr.textContent=isGrp?`${c.participants.length} partecipanti`:sLabel(c.status||'offline');
   info.appendChild(nm); info.appendChild(pr); item.appendChild(av); item.appendChild(info);
   if(badge>0){const b=document.createElement('div');b.className='c-badge';b.textContent=badge;item.appendChild(b);}
   item.addEventListener('click',async()=>{
@@ -632,6 +724,7 @@ function mkItem(c,badge,isGrp=false) {
 }
 
 function cId(a,b){return[a,b].sort().join('_');}
+function effectiveStatus(u){ if(!u)return'offline'; const ls=u.lastSeen||u.last_seen; if(ls){ const d=new Date(ls).getTime(); if(Date.now()-d>OFFLINE_THRESHOLD_MS)return'offline'; } return u.status||'offline'; }
 function sLabel(s){return{online:'🟢 Online',away:'🟡 Assente',offline:'⚫ Non disponibile'}[s]||'⚫ Non disponibile';}
 
 function openNewGrp() {
@@ -696,12 +789,22 @@ async function saveMyPwd() {
   const cur=document.getElementById('pwd-cur').value,np=document.getElementById('pwd-new').value,cp=document.getElementById('pwd-conf').value;
   const err=document.getElementById('mpwd-err'),ok=document.getElementById('mpwd-ok');
   err.className='alert alert-error'; ok.className='alert alert-success';
-  if(hash(cur)!==me.passwordHash){showAlert(err,'Password attuale errata.');return;}
   if(np.length<6){showAlert(err,'Minimo 6 caratteri.');return;}
   if(np!==cp){showAlert(err,'Le password non coincidono.');return;}
-  await dbSet('users',me.id,{passwordHash:hash(np)}); me.passwordHash=hash(np); users[me.id]={...me};
-  showAlert(ok,'✅ Password aggiornata con successo.');
-  ['pwd-cur','pwd-new','pwd-conf'].forEach(id=>document.getElementById(id).value='');
+  if(useFB&&auth){
+    try{
+      const cred=EmailAuthProvider.credential(me.email||auth.currentUser?.email,cur);
+      await reauthenticateWithCredential(auth.currentUser,cred);
+      await updatePassword(auth.currentUser,np);
+      showAlert(ok,'✅ Password aggiornata con successo.');
+      ['pwd-cur','pwd-new','pwd-conf'].forEach(id=>document.getElementById(id).value='');
+    }catch(e){ showAlert(err,e.code==='auth/invalid-credential'?'Password attuale errata.':e.message); }
+  } else {
+    if(hash(cur)!==me.passwordHash){showAlert(err,'Password attuale errata.');return;}
+    await dbSet('users',me.id,{passwordHash:hash(np)}); me.passwordHash=hash(np); users[me.id]={...me};
+    showAlert(ok,'✅ Password aggiornata con successo.');
+    ['pwd-cur','pwd-new','pwd-conf'].forEach(id=>document.getElementById(id).value='');
+  }
 }
 
 function openAdmin() { renderAdminTable(); openModal('modal-admin'); }
@@ -742,9 +845,10 @@ window.toggleUser=async function(uid){
 
 function openAddUser() {
   document.getElementById('uform-title').textContent='Nuovo utente'; document.getElementById('uform-id').value='';
-  document.getElementById('uform-name').value=''; document.getElementById('uform-pwd').value='';
+  document.getElementById('uform-name').value=''; document.getElementById('uform-pwd').value=''; document.getElementById('uform-adminpwd').value='';
   document.getElementById('uform-color').value=AV_COLORS[Math.floor(Math.random()*AV_COLORS.length)];
-  document.getElementById('uform-pwd-field').style.display=''; document.getElementById('uform-err').className='alert alert-error';
+  document.getElementById('uform-pwd-field').style.display=''; document.getElementById('uform-adminpwd-wrap').style.display=useFB?'':'none';
+  document.getElementById('uform-err').className='alert alert-error';
   openModal('modal-uform');
 }
 
@@ -756,27 +860,56 @@ async function saveUser() {
   if(!uid&&pwd.length<4){showAlert(err,'Password troppo corta (minimo 4 caratteri).');return;}
   if(Object.values(users).find(u=>u.username.toLowerCase()===name.toLowerCase()&&u.id!==uid)){showAlert(err,'Nome utente già in uso.');return;}
   if(uid){await dbSet('users',uid,{username:name,avatarColor:color});users[uid]={...users[uid],username:name,avatarColor:color};}
-  else{const id='user_'+Date.now();const d={username:name,role:'user',passwordHash:hash(pwd),mustChangePwd:true,avatarColor:color,status:'offline',active:true,createdAt:new Date().toISOString()};await dbSet('users',id,d);users[id]={id,...d};}
-  closeModal('modal-uform'); renderAdminTable(); renderSidebar(); await loadLoginUsers();
+  else if(useFB&&auth){
+    const adminPwd=document.getElementById('uform-adminpwd').value;
+    if(!adminPwd){showAlert(err,'Inserisci la tua password admin per confermare.');return;}
+    const email=(name.toLowerCase().replace(/[\s.-]+/g,'')||'user')+'@tools-chat.local';
+    try{
+      const cred=await createUserWithEmailAndPassword(auth,email,pwd);
+      const newUid=cred.user.uid;
+      const d={username:name,email,role:'user',avatarColor:color,status:'offline',active:true,createdAt:new Date().toISOString()};
+      await fbSet('users',newUid,d); users[newUid]={id:newUid,...d};
+      await signOut(auth);
+      await signInWithEmailAndPassword(auth,me.email,adminPwd);
+      me={id:auth.currentUser.uid,...(await getDoc(doc(db,'users',auth.currentUser.uid))).data()};
+    }catch(e){showAlert(err,e.code==='auth/email-already-in-use'?'Email già usata. Scegli un altro nome.':e.message);return;}
+  } else {const id='user_'+Date.now();const d={username:name,role:'user',passwordHash:hash(pwd),mustChangePwd:true,avatarColor:color,status:'offline',active:true,createdAt:new Date().toISOString()};await dbSet('users',id,d);users[id]={id,...d};}
+  closeModal('modal-uform'); renderAdminTable(); renderSidebar(); if(!useFB) await loadLoginUsers();
 }
 
 async function doResetPwd() {
   const uid=document.getElementById('rpwd-uid').value,pwd=document.getElementById('rpwd-val').value.trim();
   const err=document.getElementById('rpwd-err');
-  if(pwd.length<4){showAlert(err,'Minimo 4 caratteri.');return;}
-  await dbSet('users',uid,{passwordHash:hash(pwd),mustChangePwd:true}); users[uid]={...users[uid],passwordHash:hash(pwd),mustChangePwd:true};
-  closeModal('modal-resetpwd');
+  const u=users[uid];
+  if(useFB&&auth&&u?.email){
+    try{
+      await sendPasswordResetEmail(auth,u.email);
+      err.className='alert alert-success show'; err.textContent='✅ Email di reset inviata a '+u.username;
+      setTimeout(()=>closeModal('modal-resetpwd'),1500);
+    }catch(e){showAlert(err,e.message);}
+  } else {
+    if(pwd.length<4){showAlert(err,'Minimo 4 caratteri.');return;}
+    await dbSet('users',uid,{passwordHash:hash(pwd),mustChangePwd:true}); users[uid]={...users[uid],passwordHash:hash(pwd),mustChangePwd:true};
+    closeModal('modal-resetpwd');
+  }
 }
 
 async function doLogout() {
   if(!confirm('Vuoi disconnetterti?'))return;
-  await dbSet('users',me.id,{status:'offline'});
+  stopHeartbeat();
+  document.removeEventListener('visibilitychange',onVisibilityChange);
+  window.removeEventListener('beforeunload',onBeforeUnload);
+  try{ if(me) await dbSet('users',me.id,{status:'offline',lastSeen:new Date().toISOString()}); }catch(e){}
   Object.values(unsub).forEach(fn=>{if(fn)fn();}); unsub={msgs:null,users:null,convs:null,typing:null};
   me=null; curConv=null;
+  clearSession();
   document.getElementById('app').classList.remove('show'); document.getElementById('login-screen').style.display='flex';
   document.getElementById('pnl-login').style.display=''; document.getElementById('pnl-change-pwd').style.display='none';
-  document.getElementById('login-pwd').value=''; document.getElementById('btn-admin').style.display='none';
-  await loadLoginUsers();
+  document.getElementById('login-pwd').value='';
+  const le=document.getElementById('login-email'); if(le)le.value='';
+  document.getElementById('btn-admin').style.display='none';
+  if(useFB&&auth){ await signOut(auth); }
+  else { await loadLoginUsers(); }
 }
 
 function setupBossKey() {
