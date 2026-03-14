@@ -458,6 +458,7 @@ async function sbSet(table,id,data) { const ex=await sbReq('GET',table,null,`?id
 async function dbSet(col,id,data) { return useFB?fbSet(col,id,data):sbSet(col,id,data); }
 async function dbAdd(col,data) { if(useFB)return fbAdd(col,data); const r=await sbReq('POST',col,data); return r&&r[0]?r[0].id:null; }
 async function dbAll(col) { return useFB?fbAll(col):sbAll(col); }
+async function dbDel(col,id) { if(useFB)await fbDel(col,id); else await sbReq('DELETE',col,null,`?id=eq.${id}`); }
 
 async function loadLoginUsers() {
   if(useFB) return;
@@ -816,7 +817,7 @@ function renderAdminTable() {
   document.getElementById('admin-info').textContent=`Gruppi: ${gc} totali (${fc}/${MAX_FREE_GROUPS} liberi)`;
   Object.values(users).sort((a,b)=>a.username.localeCompare(b.username)).forEach(u=>{
     const tr=document.createElement('tr'); if(u.active===false)tr.className='u-inactive';
-    tr.innerHTML=`<td><strong>${u.username}</strong></td><td><span class="badge ${u.role==='master'?'b-master':'b-user'}">${u.role==='master'?'Master':'Utente'}</span></td><td><span class="badge ${u.active===false?'b-off':'b-user'}">${u.active===false?'Inattivo':'Attivo'}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap">${u.id!==me.id?`<button class="btn btn-secondary btn-sm" onclick="editUser('${u.id}')">✏️</button>`:''}${u.id!==me.id?`<button class="btn btn-secondary btn-sm" onclick="resetPwd('${u.id}')">🔑</button>`:''}${u.id!==me.id&&u.role!=='master'?`<button class="btn btn-secondary btn-sm" onclick="toggleUser('${u.id}')">${u.active===false?'✅':'🚫'}</button>`:''}</td>`;
+    tr.innerHTML=`<td><strong>${u.username}</strong></td><td><span class="badge ${u.role==='master'?'b-master':'b-user'}">${u.role==='master'?'Master':'Utente'}</span></td><td><span class="badge ${u.active===false?'b-off':'b-user'}">${u.active===false?'Inattivo':'Attivo'}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap">${u.id!==me.id?`<button class="btn btn-secondary btn-sm" onclick="editUser('${u.id}')">✏️</button>`:''}${u.id!==me.id?`<button class="btn btn-secondary btn-sm" onclick="resetPwd('${u.id}')">🔑</button>`:''}${u.id!==me.id&&u.role!=='master'?`<button class="btn btn-secondary btn-sm" onclick="toggleUser('${u.id}')">${u.active===false?'✅':'🚫'}</button>`:''}${u.id!==me.id?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')" title="Elimina utente">🗑️</button>`:''}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -839,8 +840,20 @@ window.resetPwd=function(uid){
 window.toggleUser=async function(uid){
   const u=users[uid]; if(!u)return;
   const na=u.active===false?true:false;
-  await dbSet('users',uid,{active:na}); users[uid]={...u,active:na};
-  renderAdminTable(); renderSidebar();
+  try {
+    await dbSet('users',uid,{active:na}); users[uid]={...u,active:na};
+    renderAdminTable(); renderSidebar();
+  } catch(e){ alert('Errore: '+e.message); }
+};
+
+window.deleteUser=async function(uid){
+  const u=users[uid]; if(!u)return;
+  if(!confirm(`Eliminare definitivamente l'utente "${u.username}"?\n\nNon potrà più accedere all'app.`))return;
+  try {
+    await dbDel('users',uid);
+    delete users[uid];
+    renderAdminTable(); renderSidebar();
+  } catch(e){ alert('Errore: '+e.message); }
 };
 
 function openAddUser() {
