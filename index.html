@@ -160,6 +160,7 @@
   .svc-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--online); }
   .svc-dot.error { background: var(--danger); }
   .svc-dot.warn { background: var(--away); }
+  .mute-toggle { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; padding: 2px 6px; border-radius: 12px; border: 1px solid var(--border); background: white; font-size: 11px; color: var(--text-secondary); }
 
   /* MODAL */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; align-items: center; justify-content: center; }
@@ -320,7 +321,8 @@
   <div class="status-bar">
     <div class="svc-ind"><div class="svc-dot" id="fb-dot"></div><span id="fb-txt">Firebase</span></div>
     <div class="svc-ind"><div class="svc-dot" id="sb-dot"></div><span id="sb-txt">Supabase</span></div>
-    <span style="flex:1"></span><span id="active-svc"></span>
+    <span id="active-svc"></span>
+    <button type="button" class="mute-toggle" id="btn-mute"><span id="mute-icon">🔔</span><span id="mute-label">Suono attivo</span></button>
   </div>
 </div>
 
@@ -423,16 +425,17 @@ const BOSS_KEY = 'KeyH';
 const TYPING_TO = 3000;
 const POLL_MS = 3000;
 const HEARTBEAT_MS = 30000;
-const OFFLINE_THRESHOLD_MS = 60000;
+const OFFLINE_THRESHOLD_MS = 180000;
 const SESSION_KEY = 'tools_chat_session';
 const AV_COLORS = ['av-blue','av-teal','av-green','av-orange','av-red','av-purple','av-pink','av-darkblue'];
 const EMOJIS = ['😀','😂','😍','🤔','👍','👎','❤️','🔥','✅','❌','⚠️','🎉','😊','🙏','💪','😅','🤣','😎','🥳','😴','🤦','🙄','😤','👋','🤝','💡','📌','📎','🔔','⏰','📅','💻','📧','📞','🏠','🚀','💰','📊','✏️','🗑️'];
+const SOUND_KEY = 'tools_chat_sound';
 
 let db, auth, useFB = true, fbOk = false, sbOk = false;
 let me = null, users = {}, convs = {};
 let curConv = null, activeTab = 'direct';
 let bossMode = false, titleFlash = null;
-let unread = {}, typingTO = null;
+let unread = {}, typingTO = null, soundOn = true;
 let unsub = { msgs: null, users: null, convs: null, typing: null };
 let editGrpId = null, searchQ = '';
 let heartbeatInterval = null;
@@ -450,6 +453,7 @@ async function init() {
   try { const r = await fetch(`${SB_URL}/rest/v1/users?select=id&limit=1`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`}}); sbOk = r.ok||r.status===406; } catch(e) { sbOk=false; }
   updateSvc();
   setupLoginHandlers();
+  initSound();
   if(useFB && auth) {
     document.getElementById('login-email-wrap').style.display='';
     document.getElementById('login-user-wrap').style.display='none';
@@ -663,9 +667,22 @@ function setupAppHandlers() {
 function startListeners() {
   if(useFB) {
     unsub.users=onSnapshot(collection(db,'users'),snap=>{snap.docChanges().forEach(c=>{if(c.type!=='removed')users[c.doc.id]={id:c.doc.id,...c.doc.data()};else delete users[c.doc.id];});renderSidebar();if(curConv&&curConv.type==='direct')updateChatHeader();});
-    unsub.convs=onSnapshot(collection(db,'conversations'),snap=>{snap.docChanges().forEach(c=>{if(c.type!=='removed')convs[c.doc.id]={id:c.doc.id,...c.doc.data()};else delete convs[c.doc.id];});renderSidebar();});
+    unsub.convs=onSnapshot(collection(db,'conversations'),snap=>{snap.docChanges().forEach(c=>{if(c.type==='removed'){delete convs[c.doc.id]; delete unread[c.doc.id]; return;}const prev=convs[c.doc.id];const data={id:c.doc.id,...c.doc.data()};convs[c.doc.id]=data;if(prev&&c.type==='modified'&&data.lastSenderId&&data.lastSenderId!==me?.id&&(!curConv||curConv.id!==data.id)){unread[data.id]=(unread[data.id]||0)+1;}});renderSidebar();});
   } else {
-    setInterval(async()=>{users=await sbAll('users');convs=await sbAll('conversations');renderSidebar();if(curConv)pollMsgs();},POLL_MS);
+    setInterval(async()=>{
+      users=await sbAll('users');
+      const prevConvs={...convs};
+      const latest=await sbAll('conversations');
+      Object.values(latest).forEach(c=>{
+        const prev=prevConvs[c.id];
+        if(prev && c.lastTimestamp!==prev.lastTimestamp && c.lastSenderId && c.lastSenderId!==me?.id && (!curConv||curConv.id!==c.id)){
+          unread[c.id]=(unread[c.id]||0)+1;
+        }
+      });
+      convs=latest;
+      renderSidebar();
+      if(curConv)pollMsgs();
+    },POLL_MS);
   }
 }
 
@@ -718,7 +735,13 @@ function renderMsgs(messages) {
     ge.appendChild(b);ge.appendChild(t);
   });
   if(atBot)c.scrollTop=c.scrollHeight;
-  if(!bossMode&&document.hidden&&messages.length){const l=messages[messages.length-1];if(l.senderId!==me.id)startFlash();}
+  if(messages.length){
+    const l=messages[messages.length-1];
+    if(l.senderId!==me.id){
+      playBeep();
+      if(!bossMode&&document.hidden)startFlash();
+    }
+  }
 }
 
 function fmtMsg(t) {
@@ -736,8 +759,15 @@ async function sendMsg() {
   if(!text||!curConv)return;
   inp.value=''; inp.style.height='auto';
   try {
-    if(useFB){await fbAdd('messages',{convId:curConv.id,senderId:me.id,text,timestamp:serverTimestamp()});await fbSet('conversations',curConv.id,{lastMessage:text.substring(0,50),lastTimestamp:serverTimestamp()});}
-    else await sbReq('POST','messages',{conv_id:curConv.id,sender_id:me.id,text,timestamp:new Date().toISOString()});
+    if(useFB){
+      await fbAdd('messages',{convId:curConv.id,senderId:me.id,text,timestamp:serverTimestamp()});
+      await fbSet('conversations',curConv.id,{lastMessage:text.substring(0,50),lastTimestamp:serverTimestamp(),lastSenderId:me.id});
+    }
+    else{
+      const ts=new Date().toISOString();
+      await sbReq('POST','messages',{conv_id:curConv.id,sender_id:me.id,text,timestamp:ts});
+      await sbSet('conversations',curConv.id,{lastMessage:text.substring(0,50),lastTimestamp:ts,lastSenderId:me.id});
+    }
   } catch(e){alert('Errore invio: '+e.message);}
 }
 
@@ -936,9 +966,14 @@ async function saveUser() {
       const newUid=cred.user.uid;
       const d={username:name,email,role:'user',avatarColor:color,status:'offline',active:true,createdAt:new Date().toISOString()};
       await fbSet('users',newUid,d); users[newUid]={id:newUid,...d};
+      const adminEmail=me?.email;
       await signOut(auth);
-      await signInWithEmailAndPassword(auth,me.email,adminPwd);
-      me={id:auth.currentUser.uid,...(await getDoc(doc(db,'users',auth.currentUser.uid))).data()};
+      try{
+        await signInWithEmailAndPassword(auth,adminEmail,adminPwd);
+        me={id:auth.currentUser.uid,...(await getDoc(doc(db,'users',auth.currentUser.uid))).data()};
+      }catch(e){
+        alert('Utente creato correttamente, ma il login admin è fallito: '+e.message+'\\nEffettua di nuovo l\\'accesso.');
+      }
     }catch(e){showAlert(err,e.code==='auth/email-already-in-use'?'Email già usata. Scegli un altro nome.':e.message);return;}
   } else {const id='user_'+Date.now();const d={username:name,role:'user',passwordHash:hash(pwd),mustChangePwd:true,avatarColor:color,status:'offline',active:true,createdAt:new Date().toISOString()};await dbSet('users',id,d);users[id]={id,...d};}
   closeModal('modal-uform'); renderAdminTable(); renderSidebar(); if(!useFB) await loadLoginUsers();
@@ -991,6 +1026,43 @@ function startFlash() {
   document.addEventListener('visibilitychange',stopFlash,{once:true}); window.addEventListener('focus',stopFlash,{once:true});
 }
 function stopFlash(){clearInterval(titleFlash);titleFlash=null;if(!bossMode)document.title='Tools';}
+
+function initSound(){
+  try{
+    const v=localStorage.getItem(SOUND_KEY);
+    if(v==='off')soundOn=false;
+  }catch(e){}
+  updateMuteUI();
+  document.getElementById('btn-mute').addEventListener('click',()=>{
+    soundOn=!soundOn;
+    try{localStorage.setItem(SOUND_KEY,soundOn?'on':'off');}catch(e){}
+    updateMuteUI();
+  });
+}
+
+function updateMuteUI(){
+  const icon=document.getElementById('mute-icon');
+  const lbl=document.getElementById('mute-label');
+  if(!icon||!lbl)return;
+  if(soundOn){icon.textContent='🔔'; lbl.textContent='Suono attivo';}
+  else{icon.textContent='🔇'; lbl.textContent='Muto';}
+}
+
+function playBeep(){
+  if(!soundOn||bossMode)return;
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.type='sine';
+    osc.frequency.value=880;
+    gain.gain.setValueAtTime(0.08,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.25);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime+0.25);
+  }catch(e){}
+}
 
 function setupEmoji() {
   const grid=document.getElementById('emoji-grid');
