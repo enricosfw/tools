@@ -253,8 +253,7 @@
       <div class="login-title">Accedi</div>
       <div class="login-subtitle">Inserisci le tue credenziali per continuare</div>
       <div class="alert alert-error" id="login-err"></div>
-      <div class="form-field" id="login-email-wrap" style="display:none"><label class="form-label">Nome utente o email <span class="req">*</span></label><input type="text" class="form-input" id="login-email" placeholder="es. enrico.sfw@gmail.com oppure Mario"></div>
-      <div class="form-field" id="login-user-wrap"><label class="form-label">Utente <span class="req">*</span></label><select class="form-select" id="login-user-sel"><option value="">— Seleziona utente —</option></select></div>
+      <div class="form-field"><label class="form-label">Nome utente o email <span class="req">*</span></label><input type="text" class="form-input" id="login-id"></div>
       <div class="form-field"><label class="form-label">Password <span class="req">*</span></label><input type="password" class="form-input" id="login-pwd" placeholder="Password"></div>
       <button class="btn btn-primary btn-full" id="login-btn" style="margin-top:8px">Accedi</button>
     </div>
@@ -455,9 +454,6 @@ async function init() {
   setupLoginHandlers();
   initSound();
   if(useFB && auth) {
-    document.getElementById('login-email-wrap').style.display='';
-    document.getElementById('login-user-wrap').style.display='none';
-    document.getElementById('login-pwd').addEventListener('keydown',e=>e.key==='Enter'&&doLogin());
     onAuthStateChanged(auth,async(user)=>{
       if(user){
         try {
@@ -468,7 +464,7 @@ async function init() {
       } else {
         document.getElementById('login-screen').style.display='flex';
         document.getElementById('app').classList.remove('show');
-        await loadLoginUsers();
+        if(!useFB)await loadLoginUsers();
       }
     });
   } else {
@@ -508,13 +504,8 @@ async function dbDel(col,id) { if(useFB)await fbDel(col,id); else await sbReq('D
 
 async function loadLoginUsers() {
   if(useFB) return;
-  const sel = document.getElementById('login-user-sel');
   try {
     users = await dbAll('users');
-    sel.innerHTML = '<option value="">— Seleziona utente —</option>';
-    Object.values(users).filter(u=>u.active!==false).sort((a,b)=>a.username.localeCompare(b.username)).forEach(u=>{
-      const o=document.createElement('option'); o.value=u.id; o.textContent=u.username; sel.appendChild(o);
-    });
     if(!Object.keys(users).length) { await createMaster(); await loadLoginUsers(); }
   } catch(e) { await createMaster(); await loadLoginUsers(); }
 }
@@ -527,32 +518,33 @@ async function createMaster() {
 
 function setupLoginHandlers() {
   document.getElementById('login-btn').addEventListener('click', doLogin);
-  if(!useFB||!auth) document.getElementById('login-pwd').addEventListener('keydown', e=>e.key==='Enter'&&doLogin());
+  document.getElementById('login-pwd').addEventListener('keydown', e=>e.key==='Enter'&&doLogin());
   document.getElementById('cpwd-btn').addEventListener('click', doFirstPwd);
 }
 
 async function doLogin() {
+  const ident=document.getElementById('login-id').value.trim();
   const pwd=document.getElementById('login-pwd').value;
   const err=document.getElementById('login-err');
   err.className='alert alert-error';
+  if(!ident){showAlert(err,'Inserisci nome utente o email.');return;}
   if(!pwd){showAlert(err,'Inserisci la password.');return;}
   if(useFB&&auth){
-    const input=document.getElementById('login-email').value.trim();
-    if(!input){showAlert(err,'Inserisci nome utente o email.');return;}
-    const email=input.includes('@')?input:(input.toLowerCase().replace(/[\s.-]+/g,'')||'user')+'@tools-chat.local';
+    const email=ident.includes('@')?ident:(ident.toLowerCase().replace(/[\s.-]+/g,'')||'user')+'@tools-chat.local';
     try{
       await signInWithEmailAndPassword(auth,email,pwd);
     }catch(e){
       showAlert(err,e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'?'Credenziali errate.':e.message);
     }
   } else {
-    const uid=document.getElementById('login-user-sel').value;
-    if(!uid){showAlert(err,'Seleziona un utente.');return;}
-    const u=users[uid];
+    if(!Object.keys(users).length){
+      try{ users=await dbAll('users'); }catch(e){}
+    }
+    const u=Object.values(users).find(x=>x.username.toLowerCase()===ident.toLowerCase()&&x.active!==false);
     if(!u){showAlert(err,'Utente non trovato.');return;}
     if(hash(pwd)!==u.passwordHash){showAlert(err,'Password errata.');return;}
     me={...u};
-    if(u.mustChangePwd){document.getElementById('pnl-change-pwd').dataset.userId=uid; document.getElementById('pnl-login').style.display='none';document.getElementById('pnl-change-pwd').style.display='';return;}
+    if(u.mustChangePwd){document.getElementById('pnl-change-pwd').dataset.userId=u.id; document.getElementById('pnl-login').style.display='none';document.getElementById('pnl-change-pwd').style.display='';return;}
     await loginOk();
   }
 }
@@ -1008,7 +1000,7 @@ async function doLogout() {
   document.getElementById('app').classList.remove('show'); document.getElementById('login-screen').style.display='flex';
   document.getElementById('pnl-login').style.display=''; document.getElementById('pnl-change-pwd').style.display='none';
   document.getElementById('login-pwd').value='';
-  const le=document.getElementById('login-email'); if(le)le.value='';
+  const le=document.getElementById('login-id'); if(le)le.value='';
   document.getElementById('btn-admin').style.display='none';
   if(useFB&&auth){ await signOut(auth); }
   else { await loadLoginUsers(); }
