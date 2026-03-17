@@ -958,13 +958,13 @@ async function saveUser() {
       const newUid=cred.user.uid;
       const d={username:name,email,role:'user',avatarColor:color,status:'offline',active:true,createdAt:new Date().toISOString()};
       await fbSet('users',newUid,d); users[newUid]={id:newUid,...d};
-      const adminEmail=me?.email;
+      const adminEmail=me&&me.email;
       await signOut(auth);
       try{
         await signInWithEmailAndPassword(auth,adminEmail,adminPwd);
         me={id:auth.currentUser.uid,...(await getDoc(doc(db,'users',auth.currentUser.uid))).data()};
       }catch(e){
-        alert('Utente creato correttamente, ma il login admin è fallito: '+e.message+'\\nEffettua di nuovo l\\'accesso.');
+        alert('Utente creato correttamente, ma il login admin è fallito: '+e.message+'. Effettua di nuovo l\'accesso come amministratore.');
       }
     }catch(e){showAlert(err,e.code==='auth/email-already-in-use'?'Email già usata. Scegli un altro nome.':e.message);return;}
   } else {const id='user_'+Date.now();const d={username:name,role:'user',passwordHash:hash(pwd),mustChangePwd:true,avatarColor:color,status:'offline',active:true,createdAt:new Date().toISOString()};await dbSet('users',id,d);users[id]={id,...d};}
